@@ -1,3 +1,4 @@
+import re
 import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
@@ -47,7 +48,9 @@ def rescan_files(
         unscanned: bool = False,
         shallow: bool = True,
 ) -> None:
-    commands = ["php", "/home/www/nextcloud/occ", "files:scan", "--path", str(path)]
+    # For some reason this has to be done for group folders
+    effective_path = re.sub(r"__groupfolders/\d+/(.*)", r"\1", str(path))
+    commands = ["php", "/home/www/nextcloud/occ", "files:scan", "--path", effective_path]
     if unscanned:
         commands.append("--unscanned")
     if shallow:
