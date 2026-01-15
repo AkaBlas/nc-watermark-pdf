@@ -1,6 +1,39 @@
 # nc-watermark-pdf
 
-Simple Python Script to Add Watermarks to PDFs via [NextCloud Workflows](https://github.com/nextcloud/workflow_script).
+Simple Scripting to Add Watermarks to PDFs in a NextCloud Instance.
+Contains two versions
+
+## PHP Script
+
+To be run as cron job on the NextCloud server.
+Works by scanning a hard-coded directory for PDF files, compares against a persisted list of previously scanned files, and adds watermarks to new files.
+Checks only the file name, not content or hash.
+
+Adds watermarks using [markpdf](https://github.com/AkaBlas/markpdf). This is a GO binary, which requires the binary to be installed on the system.
+
+Run the script as 
+
+```bash
+php watermark.php
+```
+
+or as 
+
+```bash
+php watermark.php populate
+```
+
+to populate the watermark cache initially with existing, already watermarked PDFs.
+
+When running this as cron job, there are some limitations:
+
+* the directory to scan is hard-coded in the script, so when renaming it, the script needs to be adjusted
+* when renaming a file in the cloud, it is detected as a new file and gets a new watermark
+* if between two runs of the cron job, a watermarked version of file A is deleted and a watermark-free version of file A is uploaded, the script does not detect it as a "new" file and does not add a watermark again
+
+## Python Script
+
+To be run via [NextCloud Workflows](https://github.com/nextcloud/workflow_script), if `shell_exec` is enabled for PHP in the webserver running NextCloud.
 
 It implements two ways of adding watermarks to PDFs:
 
