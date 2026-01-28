@@ -132,8 +132,10 @@ final class WatermarkAutomation
         [$groupId, $relativePath] = $this->extractForOcc($filePath);
         if ($groupId === null || $relativePath === null) return false;
 
+        $php = escapeshellcmd(PHP_BINARY);
         $occCmd = sprintf(
-            'php %s groupfolders:scan --path %s %s',
+            '%s -f %s groupfolders:scan --path %s %s',
+            $php,
             escapeshellarg($this->occPath),
             escapeshellarg($relativePath),
             escapeshellarg($groupId)
