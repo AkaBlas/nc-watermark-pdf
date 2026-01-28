@@ -20,6 +20,7 @@ final class WatermarkAutomation
     private string $occPath;
     private string $historyPath;
     private string $failurePath;
+    private string $logPath;
 
     public function __construct(
         string $basePath,
@@ -27,7 +28,8 @@ final class WatermarkAutomation
         string $markpdfPath,
         string $occPath,
         string $historyPath,
-        string $failurePath
+        string $failurePath,
+        string $logPath
     ) {
         $this->basePath      = $basePath;
         $this->watermarkPath = $watermarkPath;
@@ -35,6 +37,7 @@ final class WatermarkAutomation
         $this->occPath       = $occPath;
         $this->historyPath   = $historyPath;
         $this->failurePath   = $failurePath;
+        $this->logPath       = $logPath;
     }
 
     /**
@@ -52,7 +55,7 @@ final class WatermarkAutomation
 
         if ($populateOnly) {
             $this->saveHistory($currentFiles);
-            echo "Populate mode: history updated with " . count($currentFiles) . " files.\n";
+            $this->log("Populate mode: history updated with " . count($currentFiles) . " files.");
             return;
         }
 
@@ -69,12 +72,12 @@ final class WatermarkAutomation
         $this->saveHistory($updatedFiles);
         $this->saveFailures($failures);
 
-        echo "Scan complete.\n";
-        echo "New files: " . count($newFiles) . "\n";
-        echo "Removed files: " . count($removedFiles) . "\n";
-        echo "Watermark succeeded: " . count($success) . "\n";
+        $this->log("Scan complete.");
+        $this->log("New files: " . count($newFiles));
+        $this->log("Removed files: " . count($removedFiles));
+        $this->log("Watermark succeeded: " . count($success));
         if ($failures) {
-            echo "Failures: " . count($failures) . " (see {$this->failurePath})\n";
+            $this->log("Failures: " . count($failures) . " (see {$this->failurePath})");
         }
     }
 
@@ -148,10 +151,30 @@ final class WatermarkAutomation
     {
         $output = [];
         exec($cmd . ' 2>&1', $output, $code);
-        echo "Executed: $cmd\n";
-        echo "Exit code: $code\n";
-        echo "Output:\n" . implode("\n", $output) . "\n";
+
+        $entryLines = [];
+        $entryLines[] = "Executed: $cmd";
+        $entryLines[] = "Exit code: $code";
+        $entryLines[] = "Output:";
+        foreach ($output as $line) {
+            $entryLines[] = $line;
+        }
+        $entry = implode(PHP_EOL, $entryLines);
+
+        $this->log($entry);
+
         return ['code' => $code, 'output' => $output];
+    }
+
+    /**
+     * Append a message to the log file, prepended with a timestamp.
+     */
+    private function log(string $message): void
+    {
+        $timestamp = date('Y-m-d H:i:s');
+        $entry = "[$timestamp] " . str_replace(PHP_EOL, PHP_EOL . "[$timestamp] ", $message) . PHP_EOL;
+        // Anhängen in die Logdatei (wird erstellt, falls nicht vorhanden)
+        file_put_contents($this->logPath, $entry, FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -211,6 +234,7 @@ $automation = new WatermarkAutomation(
     '/path/to/nextcloud/occ',
     $scriptDir . '/history.json',
     $scriptDir . '/failures.log',
+    $scriptDir . '/automation.log'
 );
 
 $isPopulate = isset($argv[1]) && strtolower($argv[1]) === 'populate';
