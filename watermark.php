@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 final class WatermarkAutomation
 {
-    private string $basePath;
+    /** @var string[] */
+    private array $basePaths;
     private string $watermarkPath;
     private string $markpdfPath;
     private string $occPath;
@@ -23,7 +24,7 @@ final class WatermarkAutomation
     private string $logPath;
 
     public function __construct(
-        string $basePath,
+        array $basePaths,
         string $watermarkPath,
         string $markpdfPath,
         string $occPath,
@@ -31,7 +32,7 @@ final class WatermarkAutomation
         string $failurePath,
         string $logPath
     ) {
-        $this->basePath      = $basePath;
+        $this->basePaths     = array_values($basePaths);
         $this->watermarkPath = $watermarkPath;
         $this->markpdfPath   = $markpdfPath;
         $this->occPath       = $occPath;
@@ -47,7 +48,12 @@ final class WatermarkAutomation
      */
     public function run(bool $populateOnly = false): void
     {
-        $currentFiles = $this->scanPdfFiles($this->basePath);
+        $currentFiles = [];
+        foreach ($this->basePaths as $basePath) {
+            $currentFiles = array_merge($currentFiles, $this->scanPdfFiles($basePath));
+        }
+        $currentFiles = array_values(array_unique($currentFiles));
+        sort($currentFiles);
         $previousFiles = $this->loadHistory();
 
         $newFiles     = array_diff($currentFiles, $previousFiles);
@@ -230,7 +236,7 @@ final class WatermarkAutomation
 
 $scriptDir = __DIR__;
 $automation = new WatermarkAutomation(
-    '/path/to/scan',
+    ['/path/to/scan'],
     $scriptDir . '/watermark.png',
     $scriptDir . '/markpdf',
     '/path/to/nextcloud/occ',
